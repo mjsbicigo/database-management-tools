@@ -1,0 +1,106 @@
+# Build results
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+*.log
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio 2017/2019/2022 cache/options directory
+.vs/
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet packages
+*.nupkg
+# The packages folder can be ignored because of PackageReference
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+
+# Dotnet tool restore
+.dotnet/
+
+# Npm/Yarn
+node_modules/
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# VS Code settings
+.vscode/
+
+# SQL Server Management Tools logs (caso gere logs locais)
+logs/
+*.bacpac
+
+# Publish output
+publish/
+out/
+
+# Others
+*.dbmdl
+*.pdb
+*.cache
+*.tmp
+*.bak
+*.swp
+*.sln.ide
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# Local history for Visual Studio
+.localhistory/
+
+# DotCover
+*.dotCover
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Backup & temporary files
+~$*
+*.tmp
+*.bak
+*.old
+
+# Mac
+.DS_Store
+
+# WPF designer files
+*.g.i.cs
+*.g.cs
+*.i.cs
+
+# Auto-generated files
+Generated_Code/
+
+# Ignore secrets/settings
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
