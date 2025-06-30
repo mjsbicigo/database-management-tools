@@ -15,8 +15,8 @@
         <PasswordBox x:Name="PasswordBox" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button Content="Cancel" Width="80" Margin="5" Click="Cancel_Click"/>
             <Button Content="Connect" Width="100" Margin="5" Click="Connect_Click"/>
+            <Button Content="Cancel" Width="80" Margin="5" Click="Cancel_Click"/>
         </StackPanel>
 
     </StackPanel>

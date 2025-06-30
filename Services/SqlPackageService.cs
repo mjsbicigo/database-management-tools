@@ -7,42 +7,55 @@ namespace SqlServerManagementTools.Services
 {
     public static class SqlPackageService
     {
-        public static void Export(string sqlServerName, string userName, string password, string dbName, string outputFolder, Action<string> logCallback)
+        public static void Export(
+            string sqlServerName,
+            string userName,
+            string password,
+            string dbName,
+            string outputFolder,
+            Action<string> logCallback,
+            string logFilePath)
         {
             string outputFile = Path.Combine(outputFolder, dbName + ".bacpac");
 
-            // Connection string para exportação
             string connectionString =
                 $"Server={sqlServerName};Initial Catalog={dbName};User ID={userName};Password={password};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
             string args = $"/Action:Export /TargetFile:\"{outputFile}\" /SourceConnectionString:\"{connectionString}\"";
-            string logFilePath = GetLogFilePath("Exports", "export");
 
-            logCallback($" {dbName}");
-            LogToFile(logFilePath, $"[{DateTime.Now}] Exporting {dbName}");
+            logCallback($"Exporting {dbName}");
+            LogToFile(logFilePath, $"[{DateTime.Now}] Starting export of {dbName}");
             LogToFile(logFilePath, $"    SqlPackage.exe {args}");
 
             string output = RunSqlPackage(args);
             LogToFile(logFilePath, output);
+
+            LogToFile(logFilePath, $"[{DateTime.Now}] Finished export of {dbName}");
         }
 
-        public static void Import(string sqlServerName, string userName, string password, string bacpacFilePath, Action<string> logCallback)
+        public static void Import(
+            string sqlServerName,
+            string userName,
+            string password,
+            string bacpacFilePath,
+            Action<string> logCallback,
+            string logFilePath)
         {
             string dbName = Path.GetFileNameWithoutExtension(bacpacFilePath);
 
-            // Connection string para importação
             string connectionString =
                 $"Server={sqlServerName};Initial Catalog={dbName};User ID={userName};Password={password};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
             string args = $"/Action:Import /SourceFile:\"{bacpacFilePath}\" /TargetConnectionString:\"{connectionString}\" /p:DatabaseEdition=Basic /p:DatabaseServiceObjective=Basic";
-            string logFilePath = GetLogFilePath("Imports", "import");
 
             logCallback($"Importing {dbName}");
-            LogToFile(logFilePath, $"[{DateTime.Now}] Importing {dbName}");
+            LogToFile(logFilePath, $"[{DateTime.Now}] Starting import of {dbName}");
             LogToFile(logFilePath, $"    SqlPackage.exe {args}");
 
             string output = RunSqlPackage(args);
             LogToFile(logFilePath, output);
+
+            LogToFile(logFilePath, $"[{DateTime.Now}] Finished import of {dbName}");
         }
 
         private static string RunSqlPackage(string arguments)
@@ -54,7 +67,7 @@ namespace SqlServerManagementTools.Services
                     FileName = "SqlPackage.exe",
                     Arguments = arguments,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true, // Adicione esta linha
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
@@ -62,10 +75,10 @@ namespace SqlServerManagementTools.Services
 
             process.Start();
             string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd(); // Capture o erro
+            string error = process.StandardError.ReadToEnd();
             process.WaitForExit();
 
-            return output + Environment.NewLine + error; // Inclua o erro no retorno
+            return output + Environment.NewLine + error;
         }
 
         private static void LogToFile(string logFilePath, string message)
@@ -74,7 +87,7 @@ namespace SqlServerManagementTools.Services
             File.AppendAllText(logFilePath, message + Environment.NewLine);
         }
 
-        private static string GetLogFilePath(string operationFolder, string operationType)
+        public static string GetLogFilePath(string operationFolder, string operationType)
         {
             string logsRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", operationFolder);
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");

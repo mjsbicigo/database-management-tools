@@ -1,5 +1,4 @@
 using Microsoft.Data.SqlClient;
-using Microsoft.VisualBasic.ApplicationServices;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using SqlServerManagementTools.Helpers;
@@ -7,13 +6,11 @@ using SqlServerManagementTools.Models;
 using SqlServerManagementTools.Services;
 using SqlServerManagementTools.Views;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace SqlServerManagementTools
 {
@@ -32,12 +29,12 @@ namespace SqlServerManagementTools
         private string currentImportUser = string.Empty;
         private string currentImportPassword = string.Empty;
 
-        public ObservableCollection<DatabaseItem> DatabaseItems { get; set; } = new();
+        public ObservableCollection<DatabaseItem> DatabaseExportItems { get; set; } = new();
+        public ObservableCollection<DatabaseItem> DatabaseImportItems { get; set; } = new();
 
         public MainWindow()
         {
             InitializeComponent();
-
             DataContext = this;
 
             if (!SqlPackageChecker.Exists())
@@ -46,23 +43,14 @@ namespace SqlServerManagementTools
 
         private void LogStatus(string message)
         {
-            Dispatcher.Invoke(() =>
-            {
-                StatusText.Text = message;
-            });
+            Dispatcher.Invoke(() => { StatusText.Text = message; });
             Debug.WriteLine(message);
         }
 
-        // Abre a janela de conexão para Exportação
         private void OpenConnectionExportDialog_Click(object sender, RoutedEventArgs e)
         {
-            // Desabilita o botão para evitar múltiplos cliques
             OpenConnectionExportButton.IsEnabled = false;
-
-            var connectionWindow = new ConnectionWindowForm
-            {
-                Owner = this
-            };
+            var connectionWindow = new ConnectionWindowForm { Owner = this };
 
             if (connectionWindow.ShowDialog() == true)
             {
@@ -71,24 +59,20 @@ namespace SqlServerManagementTools
                 string exportPassword = connectionWindow.Password;
 
                 StatusText.Text = "Trying to connect to the server.";
-
                 var exportSqlConnectionManager = new SqlConnectionManager(exportServerName, exportUser, exportPassword);
-                
+
                 try
                 {
                     using var conn = exportSqlConnectionManager.GetOpenConnection();
-
                     var databases = DatabaseService.ListDatabases(conn);
 
-                    DatabaseItems.Clear();
+                    DatabaseExportItems.Clear();
                     foreach (var db in databases)
-                        DatabaseItems.Add(new DatabaseItem { Name = db });
-
-                    //DatabaseList.Items.Clear();
-                    //foreach (var db in databases)
-                    //    DatabaseList.Items.Add(db);
+                        DatabaseExportItems.Add(new DatabaseItem { Name = db });
 
                     StatusText.Text = "Databases listed successfully.";
+                    ConnectedServerExportText.Text = exportServerName;
+
                     ConnectionStatusExportText.Text = "Connected";
                     ConnectionStatusExportText.Foreground = System.Windows.Media.Brushes.Green;
 
@@ -104,20 +88,13 @@ namespace SqlServerManagementTools
                     ConnectionStatusExportText.Foreground = System.Windows.Media.Brushes.Red;
                 }
             }
-
             OpenConnectionExportButton.IsEnabled = true;
         }
 
-        // Abre a janela de conexão para Importação
         private void OpenConnectionImportDialog_Click(object sender, RoutedEventArgs e)
         {
-            // Desabilita o botão para evitar múltiplos cliques
             OpenConnectionImportButton.IsEnabled = false;
-
-            var connectionWindow = new ConnectionWindowForm
-            {
-                Owner = this
-            };
+            var connectionWindow = new ConnectionWindowForm { Owner = this };
 
             if (connectionWindow.ShowDialog() == true)
             {
@@ -126,19 +103,19 @@ namespace SqlServerManagementTools
                 string importPassword = connectionWindow.Password;
 
                 StatusText.Text = "Trying to connect to the server.";
-
                 var importSqlConnectionManager = new SqlConnectionManager(importServerName, importUser, importPassword);
-                
+
                 try
                 {
                     using var conn = importSqlConnectionManager.GetOpenConnection();
-
                     currentImportSqlConnectionManager = importSqlConnectionManager;
                     currentImportServerName = importServerName;
                     currentImportUser = importUser;
                     currentImportPassword = importPassword;
 
                     StatusText.Text = "Connection established successfully. Select the folder containing the .bacpac files.";
+                    ConnectedServerImportText.Text = importServerName;
+
                     ConnectionStatusImportText.Text = "Connected";
                     ConnectionStatusImportText.Foreground = System.Windows.Media.Brushes.Green;
                 }
@@ -148,46 +125,36 @@ namespace SqlServerManagementTools
                     ConnectionStatusImportText.Text = "Connection Failed";
                     ConnectionStatusImportText.Foreground = System.Windows.Media.Brushes.Red;
                 }
-
             }
-
             OpenConnectionImportButton.IsEnabled = true;
         }
 
         private void ChooseExportFolder_Click(object sender, RoutedEventArgs e)
         {
-            // Desabilita o botão para evitar múltiplos cliques
             ChooseExportFolderButton.IsEnabled = false;
-            
-            var dialog = new VistaFolderBrowserDialog()
+            var dialog = new VistaFolderBrowserDialog
             {
                 Description = "Select the folder where the .bacpac files will be saved",
                 UseDescriptionForTitle = true
             };
-
             if (dialog.ShowDialog() == true)
             {
                 exportPath = dialog.SelectedPath;
-
-                if (ExportPathBox != null)
-                {
-                    ExportPathBox.Text = exportPath;
-                    ExportPathBox.Foreground.Equals(System.Windows.Media.Brushes.Black);
-                }
+                ExportPathBox.Text = exportPath;
+                ExportPathBox.Foreground = System.Windows.Media.Brushes.Black;
             }
-            
             ChooseExportFolderButton.IsEnabled = true;
         }
 
-        private async void ExportSelected_Click(object sender, RoutedEventArgs e)
+        private async void ExportAll_Click(object sender, RoutedEventArgs e)
         {
-            ExportSelectedButton.IsEnabled = false;
+            ExportAllButton.IsEnabled = false;
 
             if (currentExportSqlConnectionManager == null || string.IsNullOrWhiteSpace(currentExportServerName))
             {
                 MessageBox.Show("No server connected on Export tab. Click 'Connect Server...' first.");
                 StatusText.Text = "No server connected on Export tab.";
-                ExportSelectedButton.IsEnabled = true;
+                ExportAllButton.IsEnabled = true;
                 return;
             }
 
@@ -195,25 +162,34 @@ namespace SqlServerManagementTools
             {
                 MessageBox.Show("No export folder selected. Please choose a folder.");
                 StatusText.Text = "No export folder selected.";
-                ExportSelectedButton.IsEnabled = true;
+                ExportAllButton.IsEnabled = true;
                 return;
             }
 
-            var dbNames = DatabaseItems.Where(d => d.IsSelected).Select(d => d.Name).ToList();
+            var dbNames = DatabaseExportItems.Where(d => d.IsSelected).Select(d => d.Name).ToList();
             if (dbNames.Count == 0)
             {
                 MessageBox.Show("No databases selected to export.");
-                ExportSelectedButton.IsEnabled = true;
+                ExportAllButton.IsEnabled = true;
                 return;
             }
 
+            var logFilePath = SqlPackageService.GetLogFilePath("Exports", "export");
             await Task.Run(() =>
             {
+                int total = dbNames.Count;
+                int current = 0;
+
                 foreach (string dbName in dbNames)
                 {
                     try
                     {
-                        SqlPackageService.Export(currentExportServerName, currentExportUser, currentExportPassword, dbName, exportPath, LogStatus);
+                        SqlPackageService.Export(currentExportServerName, currentExportUser, currentExportPassword, dbName, exportPath, LogStatus, logFilePath);
+                        current++;
+                        Dispatcher.Invoke(() =>
+                        {
+                            OperationProgress.Value = (current * 100) / total;
+                        });
                         LogStatus($"Export finished for {dbName}");
                     }
                     catch (Exception ex)
@@ -223,72 +199,86 @@ namespace SqlServerManagementTools
                 }
             });
 
-            ExportSelectedButton.IsEnabled = true;
+            ExportAllButton.IsEnabled = true;
             MessageBox.Show("Export completed.");
         }
 
         private void ChooseImportFolder_Click(object sender, RoutedEventArgs e)
         {
-            // Desabilita o botão para evitar múltiplos cliques
             ChooseImportFolderButton.IsEnabled = false;
-
-            var dialog = new OpenFileDialog()
+            var dialog = new VistaFolderBrowserDialog
             {
-                Filter = "bacpac files (*.bacpac)|*.bacpac",
-                Multiselect = true
+                Description = "Select the folder containing the .bacpac files",
+                UseDescriptionForTitle = true
             };
 
             if (dialog.ShowDialog() == true)
             {
-                BacpacList.Items.Clear();
-                foreach (var file in dialog.FileNames)
-                    BacpacList.Items.Add(file);
+                importPath = dialog.SelectedPath;
+                ImportPathBox.Text = importPath;
+                ImportPathBox.Foreground = System.Windows.Media.Brushes.Black;
+
+                var files = Directory.GetFiles(importPath, "*.bacpac");
+                DatabaseImportItems.Clear();
+                foreach (var file in files)
+                {
+                    DatabaseImportItems.Add(new DatabaseItem
+                    {
+                        Name = Path.GetFileName(file),
+                        IsSelected = false
+                    });
+                }
+                StatusText.Text = "Select which .bacpac files to import, then click 'Import All'.";
             }
-
-            ImportPathBox.Foreground.Equals(System.Windows.Media.Brushes.Black);
-
             ChooseImportFolderButton.IsEnabled = true;
-
-            StatusText.Text = "Click 'Import All' to import selected .bacpac files.";
         }
 
         private async void ImportAll_Click(object sender, RoutedEventArgs e)
         {
-            ImportSelectedButton.IsEnabled = false;
+            ImportAllButton.IsEnabled = false;
 
             if (currentImportSqlConnectionManager == null || string.IsNullOrWhiteSpace(currentImportServerName))
             {
                 MessageBox.Show("No server connected on Import tab. Click 'Connect Server...' first.");
-                StatusText.Text = "No server connected on Import tab. Click 'Connect Server...' first.";
-                ImportSelectedButton.IsEnabled = true;
+                StatusText.Text = "No server connected on Import tab.";
+                ImportAllButton.IsEnabled = true;
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(importPath))
             {
-                MessageBox.Show("No import folder selected. Please choose a folder.");
-                StatusText.Text = "No import folder selected. Please choose a folder.";
-                ImportSelectedButton.IsEnabled = true;
+                MessageBox.Show("No import folder selected.");
+                StatusText.Text = "No import folder selected.";
+                ImportAllButton.IsEnabled = true;
                 return;
             }
 
-            if (BacpacList.Items.Count == 0)
+            var bacpacPaths = DatabaseImportItems.Where(d => d.IsSelected)
+                                                 .Select(d => Path.Combine(importPath, d.Name))
+                                                 .ToList();
+            if (bacpacPaths.Count == 0)
             {
-                MessageBox.Show("No .bacpac files selected for import. Select at least one.");
-                ImportSelectedButton.IsEnabled = true;
+                MessageBox.Show("No .bacpac files selected to import.");
+                ImportAllButton.IsEnabled = true;
                 return;
             }
 
-            // Copie os caminhos dos arquivos para uma lista local
-            var bacpacPaths = BacpacList.Items.Cast<string>().ToList();
-
+            var logFilePath = SqlPackageService.GetLogFilePath("Imports", "import");
             await Task.Run(() =>
             {
+                int total = bacpacPaths.Count;
+                int current = 0;
+
                 foreach (string bacpacPath in bacpacPaths)
                 {
                     try
                     {
-                        SqlPackageService.Import(currentImportServerName, currentImportUser, currentImportPassword, bacpacPath, LogStatus);
+                        SqlPackageService.Import(currentImportServerName, currentImportUser, currentImportPassword, bacpacPath, LogStatus, logFilePath);
+                        current++;
+                        Dispatcher.Invoke(() =>
+                        {
+                            OperationProgress.Value = (current * 100) / total;
+                        });
                         LogStatus($"Import finished for {bacpacPath}");
                     }
                     catch (Exception ex)
@@ -298,15 +288,22 @@ namespace SqlServerManagementTools
                 }
             });
 
-            ImportSelectedButton.IsEnabled = true;
-            StatusText.Text = "Import complete. Ready to another.";
-            MessageBox.Show("Import complete.");
+            ImportAllButton.IsEnabled = true;
+            StatusText.Text = "Import complete. Ready for another.";
+            MessageBox.Show("Import completed.");
         }
 
-        private void SelectAllDatabasesCheckBox_Click(object sender, RoutedEventArgs e)
+        private void SelectAllDatabasesExportCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            bool isChecked = SelectAllDatabasesCheckBox.IsChecked == true;
-            foreach (var item in DatabaseItems)
+            bool isChecked = SelectAllDatabasesExportCheckBox.IsChecked == true;
+            foreach (var item in DatabaseExportItems)
+                item.IsSelected = isChecked;
+        }
+
+        private void SelectAllDatabasesImportCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = SelectAllDatabasesImportCheckBox.IsChecked == true;
+            foreach (var item in DatabaseImportItems)
                 item.IsSelected = isChecked;
         }
     }

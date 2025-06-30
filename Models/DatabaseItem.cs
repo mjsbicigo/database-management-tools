@@ -1,8 +1,28 @@
-﻿namespace SqlServerManagementTools.Models
+﻿using System.ComponentModel;
+
+public class DatabaseItem : INotifyPropertyChanged
 {
-    public class DatabaseItem
+    private bool isSelected;
+
+    public string Name { get; set; } = "";
+
+    public bool IsSelected
     {
-        public string Name { get; set; } = string.Empty;
-        public bool IsSelected { get; set; }
+        get => isSelected;
+        set
+        {
+            if (isSelected != value)
+            {
+                isSelected = value;
+                OnPropertyChanged(nameof(IsSelected));
+            }
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged(string propName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
     }
 }
