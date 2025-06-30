@@ -175,6 +175,7 @@ namespace SqlServerManagementTools
             }
 
             var logFilePath = SqlPackageService.GetLogFilePath("Exports", "export");
+
             await Task.Run(() =>
             {
                 int total = dbNames.Count;
@@ -219,14 +220,20 @@ namespace SqlServerManagementTools
                 ImportPathBox.Foreground = System.Windows.Media.Brushes.Black;
 
                 var files = Directory.GetFiles(importPath, "*.bacpac");
-                DatabaseImportItems.Clear();
-                foreach (var file in files)
+                
+                if (files.Length > 0)
                 {
-                    DatabaseImportItems.Add(new DatabaseItem
+                    DatabaseImportItems.Clear();
+                    foreach (var file in files)
                     {
-                        Name = Path.GetFileName(file),
-                        IsSelected = false
-                    });
+                        var fileName = Path.GetFileName(file);
+                        DatabaseImportItems.Add(new DatabaseItem { Name = fileName, IsSelected = false });
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No .bacpac files found in the selected folder.");
+                    DatabaseImportItems.Clear();
                 }
                 StatusText.Text = "Select which .bacpac files to import, then click 'Import All'.";
             }

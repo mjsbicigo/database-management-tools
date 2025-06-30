@@ -75,52 +75,36 @@
 
         <TabControl Grid.Row="0">
             <TabItem Header="Export Database">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
+                <StackPanel Margin="0">
                     <!-- Botão de conexão e status -->
-                    <Grid Grid.Row="0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Button Content="Connect Server..." Width="120" Click="OpenConnectionExportDialog_Click" Name="OpenConnectionExportButton" Grid.Column="0"/>
-                        <Label Content="Server:" Margin="10,0,0,0" VerticalAlignment="Center" Grid.Column="1"/>
-                        <TextBlock x:Name="ConnectedServerExportText" Text="None" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" Grid.Column="2"/>
-                        <Label Content="Status:" Margin="10,0,0,0" VerticalAlignment="Center" Grid.Column="3"/>
-                        <TextBlock x:Name="ConnectionStatusExportText" Text="Disconnected." Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" Grid.Column="4"/>
-                    </Grid>
+                    <StackPanel Orientation="Horizontal" Margin="5" VerticalAlignment="Top">
+                        <Button Content="Connect Server..." Width="120" Click="OpenConnectionExportDialog_Click" Name="OpenConnectionExportButton"/>
+                        <Label Content="Server:" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ConnectedServerExportText" Text="None" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
+                        <Label Content="Status:" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ConnectionStatusExportText" Text="Disconnected." Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
+                    </StackPanel>
 
                     <!-- Checkbox Select All e Lista -->
-                    <StackPanel Grid.Row="1" Margin="0">
+                    <StackPanel Margin="0">
                         <CheckBox x:Name="SelectAllDatabasesExportCheckBox"
-                                  Content="Select all"
-                                  Margin="10,0,10,5"
-                                  Click="SelectAllDatabasesExportCheckBox_Click"/>
-                        
+                          Content="Select all"
+                          Margin="10,0,10,5"
+                          Click="SelectAllDatabasesExportCheckBox_Click"/>
                         <ListBox x:Name="DatabaseExportList"
-                                 Height="360"
-                                 Margin="10,0,10,10"
-                                 ItemsSource="{Binding DatabaseExportItems}">
-                            
+                         Height="360"
+                         Margin="10,0,10,10"
+                         ItemsSource="{Binding DatabaseExportItems}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-
                     </StackPanel>
 
-                    <!-- Caminho da pasta de exportação -->
-                    <Grid Grid.Row="2" Margin="10,0,10,0">
+                    <!-- Caminho da pasta de exportação e botões -->
+                    <Grid Margin="10,0,10,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -128,34 +112,40 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="ExportPathBox"
-                                 IsReadOnly="True"
-                                 Text="Folder where the .bacpac files will be saved."
-                                 Foreground="Gray"
-                                 Height="30"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,5,0"
-                                 Grid.Column="0"/>
-                        <Button Content="Select Folder"
-                                Name="ChooseExportFolderButton"
-                                Click="ChooseExportFolder_Click"
-                                Width="95"
-                                Height="30"
-                                Margin="5,0,5,0"
-                                Grid.Column="1"/>
+                         IsReadOnly="True"
+                         Text="Folder where the .bacpac files will be saved."
+                         Foreground="Gray"
+                         Height="30"
+                         VerticalAlignment="Center"
+                         Margin="0,0,5,0"
+                         Grid.Column="0"/>
+
+                        <Button Name="ChooseExportFolderButton"
+                        Click="ChooseExportFolder_Click"
+                        Width="40"
+                        Height="32"
+                        Margin="5,0,5,0"
+                        Grid.Column="1">
+                            <TextBlock Text="📁"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"/>
+                        </Button>
+
                         <Button Content="Export"
-                                Name="ExportAllButton"
-                                Click="ExportAll_Click"
-                                Width="95"
-                                Height="30"
-                                Margin="5,0,0,0"
-                                Grid.Column="2"/>
+                        Name="ExportAllButton"
+                        Click="ExportAll_Click"
+                        Width="75"
+                        Height="32"
+                        Margin="5,0,0,0"
+                        Grid.Column="2"/>
                     </Grid>
-                </Grid>
+                </StackPanel>
             </TabItem>
 
             <TabItem Header="Import Database">
                 <StackPanel Margin="0">
-
                     <!-- Botão de conexão e status -->
                     <StackPanel Orientation="Horizontal" Margin="5" VerticalAlignment="Top">
                         <Button Content="Connect Server..." Width="120" Click="OpenConnectionImportDialog_Click" Name="OpenConnectionImportButton"/>
@@ -165,16 +155,15 @@
                         <TextBlock x:Name="ConnectionStatusImportText" Text="Disconnected." Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="1" Margin="0">
+                    <StackPanel Margin="0">
                         <CheckBox x:Name="SelectAllDatabasesImportCheckBox"
-                                  Content="Select all"
-                                  Margin="10,0,10,5"
-                                  Click="SelectAllDatabasesImportCheckBox_Click"/>
+                          Content="Select all"
+                          Margin="10,0,10,5"
+                          Click="SelectAllDatabasesImportCheckBox_Click"/>
                         <ListBox x:Name="DatabaseImportList"
-                                 Height="360"
-                                 Margin="10,0,10,10"
-                                 ItemsSource="{Binding DatabaseImportItems}">
-                            
+                         Height="360"
+                         Margin="10,0,10,10"
+                         ItemsSource="{Binding DatabaseImportItems}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
@@ -192,34 +181,39 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBox x:Name="ImportPathBox"
-                                 Text="Folder where the .bacpac files are located."
-                                 Foreground="Gray"
-                                 IsReadOnly="True"
-                                 Height="30"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,5,0"
-                                 Grid.Column="0"/>
+                         Text="Folder where the .bacpac files are located."
+                         Foreground="Gray"
+                         IsReadOnly="True"
+                         Height="30"
+                         VerticalAlignment="Center"
+                         Margin="0,0,5,0"
+                         Grid.Column="0"/>
 
-                        <Button Content="Select Files"
-                                Name="ChooseImportFolderButton"
-                                Click="ChooseImportFolder_Click"
-                                Width="95"
-                                Height="30"
-                                Margin="5,0,5,0"
-                                Grid.Column="1"/>
+                        <Button Name="ChooseImportFolderButton"
+                        Click="ChooseImportFolder_Click"
+                        Width="40"
+                        Height="32"
+                        Margin="5,0,5,0"
+                        Grid.Column="1">
+                            <TextBlock Text="📁"
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"/>
+                        </Button>
 
-                        <Button Content="Import All"
-                                Name="ImportAllButton"
-                                Click="ImportAll_Click"
-                                Width="95"
-                                Height="30"
-                                Margin="5,0,0,0"
-                                Grid.Column="2"/>
+                        <Button Content="Import"
+                        Name="ImportAllButton"
+                        Click="ImportAll_Click"
+                        Width="75"
+                        Height="32"
+                        Margin="5,0,0,0"
+                        Grid.Column="2"/>
                     </Grid>
                 </StackPanel>
             </TabItem>
-
         </TabControl>
+
 
         <Grid Grid.Row="1" Margin="0,0,0,0.5">
             <Grid.RowDefinitions>
