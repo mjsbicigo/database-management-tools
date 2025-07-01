@@ -32,6 +32,8 @@ namespace SqlServerManagementTools
         public ObservableCollection<DatabaseItem> DatabaseExportItems { get; set; } = new();
         public ObservableCollection<DatabaseItem> DatabaseImportItems { get; set; } = new();
 
+        public bool isAzureSqlDatabaseServer = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -280,7 +282,11 @@ namespace SqlServerManagementTools
                 {
                     try
                     {
-                        SqlPackageService.Import(currentImportServerName, currentImportUser, currentImportPassword, bacpacPath, LogStatus, logFilePath);
+                        if (isAzureSqlDatabaseServer == true)
+                            SqlPackageService.Import(currentImportServerName, currentImportUser, currentImportPassword, bacpacPath, LogStatus, logFilePath, true);
+                        else
+                            SqlPackageService.Import(currentImportServerName, currentImportUser, currentImportPassword, bacpacPath, LogStatus, logFilePath, false);
+
                         current++;
                         Dispatcher.Invoke(() =>
                         {
@@ -312,6 +318,11 @@ namespace SqlServerManagementTools
             bool isChecked = SelectAllDatabasesImportCheckBox.IsChecked == true;
             foreach (var item in DatabaseImportItems)
                 item.IsSelected = isChecked;
+        }
+        private void IsAzureDatabaseCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            bool isChecked = IsAzureDatabaseCheckBox.IsChecked == true;
+            isAzureSqlDatabaseServer = isChecked;
         }
     }
 }

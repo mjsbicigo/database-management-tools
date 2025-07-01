@@ -16,9 +16,9 @@ namespace SqlServerManagementTools.Views
 
         private void Connect_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(ServerTextBox.Text))
+            if (string.IsNullOrWhiteSpace(ServerTextBox.Text) || string.IsNullOrWhiteSpace(PasswordBox.Password))
             {
-                MessageBox.Show("Type SQL Server name.");
+                MessageBox.Show("The SQL Server name and password cannot be blank.");
                 return;
             }
 
@@ -29,5 +29,6 @@ namespace SqlServerManagementTools.Views
         {
             this.DialogResult = false;
         }
+
     }
 }

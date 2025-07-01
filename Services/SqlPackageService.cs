@@ -7,14 +7,7 @@ namespace SqlServerManagementTools.Services
 {
     public static class SqlPackageService
     {
-        public static void Export(
-            string sqlServerName,
-            string userName,
-            string password,
-            string dbName,
-            string outputFolder,
-            Action<string> logCallback,
-            string logFilePath)
+        public static void Export(string sqlServerName, string userName, string password, string dbName, string outputFolder, Action<string> logCallback, string logFilePath)
         {
             string outputFile = Path.Combine(outputFolder, dbName + ".bacpac");
 
@@ -33,29 +26,38 @@ namespace SqlServerManagementTools.Services
             LogToFile(logFilePath, $"[{DateTime.Now}] Finished export of {dbName}");
         }
 
-        public static void Import(
-            string sqlServerName,
-            string userName,
-            string password,
-            string bacpacFilePath,
-            Action<string> logCallback,
-            string logFilePath)
+        public static void Import(string sqlServerName, string userName, string password, string bacpacFilePath, Action<string> logCallback, string logFilePath, bool isAzureSqlDatabaseServer)
         {
             string dbName = Path.GetFileNameWithoutExtension(bacpacFilePath);
 
             string connectionString =
                 $"Server={sqlServerName};Initial Catalog={dbName};User ID={userName};Password={password};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
-            string args = $"/Action:Import /SourceFile:\"{bacpacFilePath}\" /TargetConnectionString:\"{connectionString}\" /p:DatabaseEdition=Basic /p:DatabaseServiceObjective=Basic";
+            string argsAzureSqlTrue = $"/Action:Import /SourceFile:\"{bacpacFilePath}\" /TargetConnectionString:\"{connectionString}\" /p:DatabaseEdition=Basic /p:DatabaseServiceObjective=Basic";
+            string argsAzureSqlFalse = $"/Action:Import /SourceFile:\"{bacpacFilePath}\" /TargetConnectionString:\"{connectionString}";
 
-            logCallback($"Importing {dbName}");
-            LogToFile(logFilePath, $"[{DateTime.Now}] Starting import of {dbName}");
-            LogToFile(logFilePath, $"    SqlPackage.exe {args}");
+            if (isAzureSqlDatabaseServer)
+            {
+                logCallback($"Importing {dbName}");
+                LogToFile(logFilePath, $"[{DateTime.Now}] Starting import of {dbName}");
+                LogToFile(logFilePath, $"    SqlPackage.exe {argsAzureSqlTrue}");
 
-            string output = RunSqlPackage(args);
-            LogToFile(logFilePath, output);
+                string output = RunSqlPackage(argsAzureSqlTrue);
+                LogToFile(logFilePath, output);
 
-            LogToFile(logFilePath, $"[{DateTime.Now}] Finished import of {dbName}");
+                LogToFile(logFilePath, $"[{DateTime.Now}] Finished import of {dbName}");
+            }
+            else
+            {
+                logCallback($"Importing {dbName}");
+                LogToFile(logFilePath, $"[{DateTime.Now}] Starting import of {dbName}");
+                LogToFile(logFilePath, $"    SqlPackage.exe {argsAzureSqlFalse}");
+
+                string output = RunSqlPackage(argsAzureSqlFalse);
+                LogToFile(logFilePath, output);
+
+                LogToFile(logFilePath, $"[{DateTime.Now}] Finished import of {dbName}");
+            }
         }
 
         private static string RunSqlPackage(string arguments)
