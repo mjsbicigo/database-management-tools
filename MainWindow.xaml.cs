@@ -272,6 +272,17 @@ namespace SqlServerManagementTools
                 return;
             }
 
+            string databasesList = string.Join(Environment.NewLine, bacpacPaths.Select(p => Path.GetFileNameWithoutExtension(p)));
+            string message = $"The following databases will be imported to the server '{currentImportServerName}':\n\n{databasesList}\n\nDo you want to continue?";
+            var result = MessageBox.Show(message, "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                StatusText.Text = "Import cancelled by user.";
+                ImportAllButton.IsEnabled = true;
+                return;
+            }
+
             var logFilePath = SqlPackageService.GetLogFilePath("Imports", "import");
             await Task.Run(() =>
             {
