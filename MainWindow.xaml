@@ -234,7 +234,7 @@
                            FontSize="14"
                            Foreground="#333"
                            FontWeight="SemiBold"
-                           Text="Application Ready!"
+                           Text="Application is Ready."
                            TextAlignment="Center"
                            VerticalAlignment="Center"/>
             </Border>
