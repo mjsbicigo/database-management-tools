@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace SqlServerManagementTools
+namespace DatabaseManagementTools
 {
     public partial class App : Application
     {

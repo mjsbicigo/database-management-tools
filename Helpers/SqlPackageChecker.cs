@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace SqlServerManagementTools.Helpers
+namespace DatabaseManagementTools.Helpers
 {
     public static class SqlPackageChecker
     {

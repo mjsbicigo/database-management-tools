@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace SqlServerManagementTools.Views
+namespace DatabaseManagementTools.Views
 {
     public partial class ConnectionWindowForm : Window
     {

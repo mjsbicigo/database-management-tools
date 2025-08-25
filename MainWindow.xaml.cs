@@ -1,10 +1,10 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
-using SqlServerManagementTools.Helpers;
-using SqlServerManagementTools.Models;
-using SqlServerManagementTools.Services;
-using SqlServerManagementTools.Views;
+using DatabaseManagementTools.Helpers;
+using DatabaseManagementTools.Models;
+using DatabaseManagementTools.Services;
+using DatabaseManagementTools.Views;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace SqlServerManagementTools
+namespace DatabaseManagementTools
 {
     public partial class MainWindow : Window
     {

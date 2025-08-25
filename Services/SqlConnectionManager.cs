@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace SqlServerManagementTools.Services
+namespace DatabaseManagementTools.Services
 {
     public class SqlConnectionManager
     {

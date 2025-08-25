@@ -1,4 +1,4 @@
-namespace SqlServerManagementTools.Models
+namespace DatabaseManagementTools.Models
 {
     public class DatabaseConnection
     {

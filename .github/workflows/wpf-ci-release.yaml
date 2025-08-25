@@ -1,0 +1,164 @@
+name: CI & Release
+
+on:
+  push:
+    branches: [main, develop, 'feature/*', 'fix/*', 'hotfix/*']
+    tags:
+      - 'v*.*.*'       # ex: v1.2.3
+      - 'v*.*.*-*'     # ex: v1.2.3-rc.1, v1.3.0-beta.2
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  RUNTIME: 'win-x64'
+  PROJECT: 'DatabaseManagementTools.csproj'
+  ARTIFACT_NAME: 'DatabaseManagementTools'
+
+jobs:
+  # CI em branches e PRs (sem criar release)
+  ci:
+    if: startsWith(github.ref, 'refs/heads/')
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test (se existir projeto *Tests*)
+        if: ${{ hashFiles('**/*Tests.csproj') != '' }}
+        run: dotnet test --configuration Release --no-build
+
+      - name: Publish (single EXE, self-contained)
+        run: >
+          dotnet publish ${{ env.PROJECT }}
+          --configuration Release
+          --runtime ${{ env.RUNTIME }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeAllContentForSelfExtract=true
+          -p:PublishTrimmed=false
+          --output ./publish
+
+      - name: Renomear artefato com run number
+        shell: pwsh
+        run: |
+          $exe = Join-Path 'publish' "${{ env.ARTIFACT_NAME }}.exe"
+          $new = Join-Path 'publish' ("{0}_ci-{1}_{2}.exe" -f "${{ env.ARTIFACT_NAME }}", "${{ github.run_number }}", "${{ env.RUNTIME }}")
+          if (Test-Path $exe) { Move-Item $exe $new }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-ci-${{ github.run_number }}-${{ env.RUNTIME }}
+          path: ./publish
+
+  # Release somente quando fizer push de TAG (vX.Y.Z ou vX.Y.Z-rc.1 etc.)
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
+      - name: Definir metadados de versão a partir da tag
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"        # ex: v1.2.3-rc.1
+          $semver = $tag.TrimStart('v')          # ex: 1.2.3-rc.1
+          $isPrerelease = $semver -match '-'
+          $m = [regex]::Match($semver, '^(?<maj>\d+)\.(?<min>\d+)\.(?<pat>\d+)')
+          if (-not $m.Success) { throw "Tag deve ser v<major>.<minor>.<patch> (com ou sem sufixo pre-release)." }
+          $major = $m.Groups['maj'].Value
+          $minor = $m.Groups['min'].Value
+          $patch = $m.Groups['pat'].Value
+          $fileVersion = "$major.$minor.$patch.0"
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "semver=$semver" >> $env:GITHUB_OUTPUT
+          echo "major=$major" >> $env:GITHUB_OUTPUT
+          echo "minor=$minor" >> $env:GITHUB_OUTPUT
+          echo "patch=$patch" >> $env:GITHUB_OUTPUT
+          echo "fileVersion=$fileVersion" >> $env:GITHUB_OUTPUT
+          echo "isPrerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish (single EXE, self-contained) com versão da TAG
+        run: >
+          dotnet publish ${{ env.PROJECT }}
+          --configuration Release
+          --runtime ${{ env.RUNTIME }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeAllContentForSelfExtract=true
+          -p:PublishTrimmed=false
+          -p:Version=${{ steps.meta.outputs.semver }}
+          -p:FileVersion=${{ steps.meta.outputs.fileVersion }}
+          -p:AssemblyVersion=${{ steps.meta.outputs.major }}.${{ steps.meta.outputs.minor }}.0.0
+          -p:InformationalVersion=${{ github.sha }}
+          --output ./publish
+
+      - name: Renomear binário, zip e checksum
+        shell: pwsh
+        run: |
+          $base = "${{ env.ARTIFACT_NAME }}_${{ steps.meta.outputs.tag }}_${{ env.RUNTIME }}"
+          $exeOut = Join-Path 'publish' ($base + ".exe")
+          $zipOut = Join-Path 'publish' ($base + ".zip")
+          $shaOut = Join-Path 'publish' ($base + ".sha256")
+
+          $exe = Join-Path 'publish' "${{ env.ARTIFACT_NAME }}.exe"
+          if (Test-Path $exe) { Move-Item $exe $exeOut }
+
+          # zipar tudo que saiu no publish (inclui PDB se houver)
+          if (Test-Path $zipOut) { Remove-Item $zipOut -Force }
+          Compress-Archive -Path (Join-Path 'publish' '*') -DestinationPath $zipOut
+
+          # checksum do EXE
+          (Get-FileHash $exeOut -Algorithm SHA256).Hash | Out-File -FilePath $shaOut -Encoding ascii
+
+      - name: Upload artifact do release (opcional, além de anexar no Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-${{ steps.meta.outputs.tag }}-${{ env.RUNTIME }}
+          path: ./publish
+
+      - name: Criar GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ env.ARTIFACT_NAME }} ${{ steps.meta.outputs.tag }}"
+          prerelease: ${{ steps.meta.outputs.isPrerelease }}
+          generate_release_notes: true
+          files: |
+            ./publish/${{ env.ARTIFACT_NAME }}_${{ steps.meta.outputs.tag }}_${{ env.RUNTIME }}.exe
+            ./publish/${{ env.ARTIFACT_NAME }}_${{ steps.meta.outputs.tag }}_${{ env.RUNTIME }}.zip
+            ./publish/${{ env.ARTIFACT_NAME }}_${{ steps.meta.outputs.tag }}_${{ env.RUNTIME }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

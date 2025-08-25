@@ -1,9 +1,9 @@
-using SqlServerManagementTools.Models;
+using DatabaseManagementTools.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace SqlServerManagementTools.Services
+namespace DatabaseManagementTools.Services
 {
     public static class SqlPackageService
     {
